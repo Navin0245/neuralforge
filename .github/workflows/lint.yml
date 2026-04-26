@@ -1,0 +1,30 @@
+name: Lint
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install linters
+        run: |
+          pip install ruff black isort
+
+      - name: ruff check
+        run: ruff check neuralforge/ tests/
+
+      - name: black check
+        run: black --check neuralforge/ tests/
+
+      - name: isort check
+        run: isort --check-only neuralforge/ tests/

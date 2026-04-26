@@ -1,0 +1,74 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.whl
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# ML artifacts
+*.pt
+*.pth
+*.ckpt
+checkpoints/
+runs/
+mlruns/
+mlartifacts/
+wandb/
+
+# Data
+*.h5
+*.hdf5
+*.npy
+*.npz
+data/
+datasets/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Docs build
+docs/_build/
+site/
+
+# HPC
+*.out
+*.err
+slurm-*.out
+
+# Distribution
+*.tar.gz
+
+# Utility scripts
+write.py
+
+# Generated project dumps
+project_dump.txt
