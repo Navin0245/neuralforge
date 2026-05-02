@@ -33,3 +33,5 @@ Types: Added | Changed | Fixed | Removed
 - torch.einsum: 'bki,koi->bko' for batched matrix multiply
 - torch.view_as_complex: real (k,dv,dv,2) → complex (k,dv,dv)
 - Git: feature branch → push → PR → review → merge → delete
+
+git push origin feature/fourier-layer-1d
