@@ -33,3 +33,21 @@ Types: Added | Changed | Fixed | Removed
 - torch.einsum: 'bki,koi->bko' for batched matrix multiply
 - torch.view_as_complex: real (k,dv,dv,2) → complex (k,dv,dv)
 - Git: feature branch → push → PR → review → merge → delete
+
+git push origin feature/fourier-layer-1d
+
+### Added
+- FNO1D — complete 1D Fourier Neural Operator (Figure 2a)
+  - P: nn.Linear(da, dv) pointwise lifting
+  - FourierLayer1D × T stacked layers
+  - Q: nn.Sequential(dv→128→du) nonlinear projection
+  - Optional padding for non-periodic domains
+  - NeuralOperator ABC with count_parameters()
+
+### Learned
+- nn.Linear broadcasts over (batch, n) — operates on last dim
+- nn.Sequential: each layer must be a separate argument
+- nn.ReLU — case sensitive (not nn.Relu or nn.relu)
+- nn.ModuleList registers parameters; Python list does not
+- Two-layer Q learns nonlinear projection vs single affine map
+- Writing tests before reading reference implementation
