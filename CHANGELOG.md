@@ -1,53 +1,46 @@
 # Changelog
 
-Format: [version] — date
-Types: Added | Changed | Fixed | Removed
+All notable changes to this project will be documented in this file.
+
+Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
 ## [Unreleased]
 
 ### Added
-- Repository structure and packaging (pyproject.toml)
-- GitHub Actions CI pipeline (test + lint)
-- Pre-commit hooks (ruff, black, isort)
+- `LpLoss` — relative Lp loss function for operator learning benchmarks
+
+---
+
+## [0.3.0] — 2026-05-08
+
+### Added
+- `FNO1D` — complete 1D Fourier Neural Operator (Figure 2a, Li et al. 2021)
+  - Pointwise lifting layer P: `nn.Linear(da, dv)`
+  - T stacked `FourierLayer1D` blocks
+  - Nonlinear projection Q: `dv → 128 → du`
+  - Optional padding for non-periodic domains
+  - `NeuralOperator` abstract base class with `count_parameters()`
+- `FourierLayer1D` — equation 2 of Li et al. 2021
+
+---
+
+## [0.2.0] — 2026-05-08
+
+### Added
+- `SpectralConv1D` — 1D Fourier integral operator layer (Li et al. 2021, Definition 3, Equations 4–5)
+  - Complex weight tensor R of shape `(k_max, dv, dv)`
+  - Test suite: 11 tests covering shape, resolution invariance, gradients, NaN safety, batch independence
+
+---
+
+## [0.1.0] — 2026-05-08
+
+### Added
+- Repository structure and packaging (`pyproject.toml`)
+- GitHub Actions CI pipeline (test and lint)
+- Pre-commit hooks (`ruff`, `black`, `isort`)
 - Theory documentation: FNO derivations (D1 complete)
 - References: Li 2021, Lu 2021, Anandh 2024
-
-### In Progress
-- SpectralConv1D — Fourier integral operator layer
-- FNO1D — full 1D Fourier Neural Operator
-
-## [Unreleased] — ongoing
-
-### Added
-- SpectralConv1D — 1D Fourier integral operator layer
-  - Implements Li et al. 2021, Definition 3, Equations 4-5
-  - R tensor: (k_max, dv, dv) complex weight
-  - Full test suite: 11 tests covering shape, resolution
-    invariance, gradients, NaN, batch independence
-
-### Learned
-- TDD workflow: write failing test first, then implement
-- torch.fft.rfft vs fft: rfft halves computation for real input
-- torch.einsum: 'bki,koi->bko' for batched matrix multiply
-- torch.view_as_complex: real (k,dv,dv,2) → complex (k,dv,dv)
-- Git: feature branch → push → PR → review → merge → delete
-
-git push origin feature/fourier-layer-1d
-
-### Added
-- FNO1D — complete 1D Fourier Neural Operator (Figure 2a)
-  - P: nn.Linear(da, dv) pointwise lifting
-  - FourierLayer1D × T stacked layers
-  - Q: nn.Sequential(dv→128→du) nonlinear projection
-  - Optional padding for non-periodic domains
-  - NeuralOperator ABC with count_parameters()
-
-### Learned
-- nn.Linear broadcasts over (batch, n) — operates on last dim
-- nn.Sequential: each layer must be a separate argument
-- nn.ReLU — case sensitive (not nn.Relu or nn.relu)
-- nn.ModuleList registers parameters; Python list does not
-- Two-layer Q learns nonlinear projection vs single affine map
-- Writing tests before reading reference implementation
+- Updated dependencies and `requirements.txt`
