@@ -50,18 +50,27 @@ class TestLpLoss:
         print("Loss is invariant to global scaling.")
 
     def test_asymmetry(self):
-        y_true = torch.rand(32, 1, 64, 64)
-        y_pred = torch.rand(32, 1, 64, 64)
+        """
+        Relative L2 loss is asymmetric.
+        loss(A, B) != loss(B, A) because denominator changes.
 
-        loss = LpLoss(p=2, reduction="mean")
+        We use controlled tensors to avoid flaky random behaviour.
+        """
+        loss_fn = LpLoss(p=2, reduction="mean")
 
-        loss_correct_order = loss(y_pred, y_true)
-        loss_reversed = loss(y_true, y_pred)  # Swapped!
+        # Controlled tensors with very different magnitudes
+        # ||y_true||_2 = 10.0, ||y_pred||_2 ≈ 1.0
+        # Swapping changes the denominator significantly
+        y_true = torch.ones(4, 64, 1) * 10.0
+        y_pred = torch.ones(4, 64, 1) * 1.0
 
-        assert not torch.allclose(
-            loss_correct_order, loss_reversed
-        ), "Relative L2 loss must be asymmetric"
-        print("Not Symmetric!")
+        loss_forward = loss_fn(y_pred, y_true)  # num/||y_true|| = 9/10 = 0.9
+        loss_reversed = loss_fn(y_true, y_pred)  # num/||y_pred|| = 9/1  = 9.0
+
+        assert not torch.allclose(loss_forward, loss_reversed), (
+            f"Relative L2 loss must be asymmetric. "
+            f"Got loss(A,B)={loss_forward:.4f}, loss(B,A)={loss_reversed:.4f}"
+        )
 
     def test_batch_independence(self):
         y_true_1 = torch.rand(1, 1, 64, 64)
