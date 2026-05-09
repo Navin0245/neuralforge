@@ -27,6 +27,7 @@ dev = [
   "black>=23.0.0",
   "isort>=5.12.0",
   "pre-commit>=3.4.0",
+  "mlflow>=2.8.0",
 ]
 mlops = [
   "mlflow>=2.8.0",
@@ -40,8 +41,7 @@ hpc = [
 where = ["."]
 include = ["neuralforge*"]
 
-[tool.ruff]
-line-length = 88
+[tool.ruff.lint]
 select = ["E", "F", "W", "I", "N"]
 ignore = ["E501"]
 
