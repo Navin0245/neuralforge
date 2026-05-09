@@ -4,14 +4,6 @@
 Personal learning laboratory for neural operators, production ML
 engineering, Git workflows, and HPC.
 
-Implements FNO, DeepONet, WNO, GINO from scratch following their
-original papers. Built alongside M.Tech AI/ML (BITS Pilani WILP)
-and research for:
-
-> Chacko & Joy — "Fourier Neural Operator for K-Joint SCF
-> Prediction in Offshore Jacket Structures"
-> Ocean Engineering (under review, 2026)
-
 ---
 
 ## What This Repo Is
@@ -32,14 +24,13 @@ engineering workflow.
 
 ## Implementations
 
-| Model     | Paper                        | Status      | Benchmark          |
-|-----------|------------------------------|-------------|--------------------|
-| FNO 1D    | Li et al. 2021 (arXiv 2010.08895) | 🔄 Building | Target: <2% L2    |
-| FNO 2D    | Li et al. 2021               | 📋 Planned  | Target: <1.5% L2  |
-| DeepONet  | Lu et al. 2021               | 📋 Planned  | —                  |
-| WNO       | Tripura & Chakraborty 2022   | 📋 Planned  | —                  |
-| GINO      | Li et al. 2023               | 📋 Planned  | —                  |
-
+| Model     | Paper                        | Status      | Benchmark             |
+|-----------|------------------------------|-------------|-----------------------|
+| FNO 1D    | Li et al. 2021 (arXiv 2010.08895) | 🔄 Building | Target:<2% L2   |
+| FNO 2D    | Li et al. 2021               | 📋 Planned  | Target: <1.5% L2     |
+| DeepONet  | Lu et al. 2021               | 📋 Planned  | —                    |
+| GNN       | -                            | 📋 Planned  | —                    |
+| GINO      | -                            | 📋 Planned  | —                    |
 ---
 
 ## Structure
