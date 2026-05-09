@@ -9,7 +9,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
-- `LpLoss` — relative Lp loss function for operator learning benchmarks
+- `LpLoss` — relative Lp loss function for operator learning benchmarks (Li et al. 2021, Section 5)
+- `Trainer` — training loop with train/validation epochs, LR scheduling, and best-model checkpointing
+  - MLflow integration: logs `train_loss`, `val_loss`, `learning_rate` per epoch
+  - Automatic checkpoint directory creation; saves `best_model.pth` on validation improvement
+- `neuralforge.training` package with public API (`LpLoss`, `Trainer`)
 
 ---
 
