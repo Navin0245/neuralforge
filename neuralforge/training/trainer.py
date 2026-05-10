@@ -33,6 +33,11 @@ class Trainer:
             mlflow.set_experiment(mlflow_experiment_name)
         self.best_val_loss = float("inf")
 
+        self.history: dict[str, list[float]] = {
+            "train_loss": [],
+            "val_loss": [],
+        }
+
     def _train_one_epoch(self):
         self.model.train()
         total_loss = 0.0
@@ -71,6 +76,7 @@ class Trainer:
         return avg_loss
 
     def fit(self, epochs, run_name=None):
+        mlflow.end_run()
         with mlflow.start_run(run_name=run_name):
             for epoch in range(1, epochs + 1):
                 train_loss = self._train_one_epoch()
@@ -87,6 +93,9 @@ class Trainer:
                     f"Val: {val_loss:.4f} | "
                     f"LR: {current_lr:.6f}"
                 )
+
+                self.history["train_loss"].append(train_loss)
+                self.history["val_loss"].append(val_loss)
 
                 mlflow.log_metric("train_loss", train_loss, step=epoch)
                 mlflow.log_metric("val_loss", val_loss, step=epoch)

@@ -1,0 +1,32 @@
+# Burgers Equation — FNO1D Experiment Config
+# Reproduces Li et al. 2021, Table 1, Section 5.1
+# Target: <1.49% relative L2 error at n=1024
+
+model:
+  da: 2           # input channels: [u0(x), x]
+  du: 1           # output channels: u(x, t=1)
+  d_v: 64         # hidden channel dimension
+  k_max: 16       # maximum Fourier modes
+  n_layers: 4     # number of Fourier layers T
+
+data:
+  n_train: 1000
+  n_test: 200
+  resolution: 1024
+  batch_size: 20
+  path: "data/Burgers_R10.mat"
+  url: "https://ssd.mathworks.com/supportfiles/nnet/data/burgers1d/burgers_data_R10.mat"
+
+training:
+  epochs: 500
+  lr: 0.001
+  scheduler_step: 100     # halve LR every 100 epochs
+  scheduler_gamma: 0.5
+
+mlflow:
+  experiment_name: "burgers_fno1d"
+  run_name: "reproduce_table1_li2021"
+
+benchmark:
+  target_l2: 0.0149
+  acceptable_range: [0.013, 0.017]
