@@ -72,3 +72,7 @@ write.py
 
 # Generated project dumps
 project_dump.txt
+
+data/
+data/
+*.mat
