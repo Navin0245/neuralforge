@@ -1,10 +1,6 @@
 """
 Unit tests for SpectralConv1D.
 
-Tests are written BEFORE the implementation (TDD).
-Run these first — they should all FAIL with ImportError.
-After implementing SpectralConv1D, all should PASS.
-
 What we are testing:
     1. Output shape matches input shape
     2. Works at any resolution (resolution invariance)
