@@ -1,0 +1,29 @@
+model:
+  da: 3
+  du: 1
+  d_v: 32
+  k_max1: 12
+  k_max2: 12
+  n_layers: 4
+
+data:
+  n_train: 824
+  n_test: 200
+  resolution: 64
+  batch_size: 20
+  path: "data/piececonst_r241_N1024_smooth2.mat"
+  url: "https://drive.google.com/uc?id=1ViDqN7nc_VCnMackiXv_d7CHZANAFKzV"
+
+training:
+  epochs: 500
+  lr: 0.001
+  scheduler_step: 100
+  scheduler_gamma: 0.5
+
+mlflow:
+  experiment_name: "darcy_fno2d"
+  run_name: "reproduce_table4_li2021"
+
+benchmark:
+  target_l2: 0.0108
+  acceptable_range: [0.008, 0.015]

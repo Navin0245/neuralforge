@@ -13,6 +13,7 @@ Contracts:
 
 import torch
 
+from neuralforge.layers.spectral_conv import SpectralConv2D
 from neuralforge.models.fno2d import FNO2D
 
 
@@ -81,3 +82,28 @@ class TestFNO2D:
         params_large = sum(p.numel() for p in model_large.parameters())
 
         assert params_large > params_small, "Larger dv must produce more parameters"
+
+    def test_rfft2_buffer_shape_not_double_halved(self):
+        """
+        Verify that SpectralConv2D output buffer correctly matches
+        rfft2 output shape: (batch, s1, s2//2+1, dv).
+
+        Bug caught: buffer was (batch, s1//2+1, s2//2+1, dv)
+        which misplaces negative frequencies and causes irfft2 artifacts.
+        """
+        layer = SpectralConv2D(d_v=8, k_max1=4, k_max2=4)
+
+        # Non-square input to make dimension confusion obvious
+        x = torch.randn(2, 32, 64, 8)  # s1=32, s2=64
+
+        y = layer(x)
+
+        # Output must exactly match input shape
+        assert y.shape == x.shape, f"Shape mismatch: {x.shape} → {y.shape}"
+
+        # Additional check: rfft2 of input has correct intermediate shape
+        x_ft = torch.fft.rfft2(x, dim=(1, 2))
+        assert x_ft.shape == (2, 32, 33, 8), (
+            f"rfft2 output wrong: expected (2,32,33,8), got {x_ft.shape}. "
+            f"dim1 must stay full (32), only dim2 halved (64//2+1=33)."
+        )

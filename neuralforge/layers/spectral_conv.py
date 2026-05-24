@@ -92,7 +92,7 @@ class SpectralConv2D(nn.Module):
         weights2 = torch.view_as_complex(self.R2.contiguous())
 
         out_ft = torch.zeros(
-            batch, s1 // 2 + 1, s2 // 2 + 1, d_v, dtype=torch.cfloat, device=x.device
+            batch, s1, s2 // 2 + 1, d_v, dtype=torch.cfloat, device=x.device
         )
         out_ft[:, :k1, :k2, :] = self._multiply_modes(x_ft[:, :k1, :k2, :], weights1)
         out_ft[:, -k1:, :k2, :] = self._multiply_modes(x_ft[:, -k1:, :k2, :], weights2)
