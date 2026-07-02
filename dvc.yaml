@@ -1,0 +1,48 @@
+stages:
+  download_data:
+    cmd: python scripts/download_data.py
+    deps:
+      - scripts/download_data.py
+      - configs/burgers_fno.yaml
+    outs:
+      - data/burgers_data_R10.mat:
+          cache: true
+          push: false
+
+  train:
+    cmd: python experiments/burgers_fno1d.py --config configs/burgers_fno.yaml
+    deps:
+      - experiments/burgers_fno1d.py
+      - configs/burgers_fno.yaml
+      - neuralforge/models/fno1d.py
+      - neuralforge/training/trainer.py
+      - neuralforge/training/losses.py
+      - data/burgers_data_R10.mat
+    params:
+      - configs/burgers_fno.yaml:
+          - model
+          - training
+          - data.n_train
+          - data.n_test
+          - data.resolution
+    outs:
+      - checkpoints/:
+          cache: true
+    metrics:
+      - metrics/results.json:
+          cache: false
+
+  evaluate:
+    cmd: python scripts/evaluate.py --config configs/burgers_fno.yaml
+    deps:
+      - scripts/evaluate.py
+      - configs/burgers_fno.yaml
+      - checkpoints/
+      - neuralforge/models/fno1d.py
+      - data/burgers_data_R10.mat
+    metrics:
+      - metrics/eval_report.json:
+          cache: false
+    plots:
+      - metrics/predictions.csv:
+          cache: false

@@ -36,7 +36,7 @@ Reference:
 import torch
 import torch.nn as nn
 
-from neuralforge.layers.spectral_conv import SpectralConv1D
+from neuralforge.layers.spectral_conv import SpectralConv1D, SpectralConv2D
 
 
 class FourierLayer1D(nn.Module):
@@ -149,4 +149,48 @@ class FourierLayer1D(nn.Module):
         # ── Combine and activate ──────────────────────────────────────
         # Add both branches (same shape: (batch, n, dv))
         # Apply ReLU: σ(x) = max(0, x) elementwise
+        return self.activation(k_out + w_out)
+
+
+class FourierLayer2D(nn.Module):
+    """
+    One complete 2D Fourier layer.
+
+    Implements equation 2 of Li et al. 2021 for 2D problems:
+        v_{t+1}(x) = σ( W·v_t(x) + (K·v_t)(x) )
+
+    Key differences from FourierLayer1D:
+        - SpectralConv2D instead of SpectralConv1D
+        - Conv2d instead of Conv1d for W branch
+        - permute(0,3,1,2) instead of transpose(1,2)
+
+    Args:
+        d_v:    Hidden channel dimension
+        k_max1: Max Fourier modes in dim 1
+        k_max2: Max Fourier modes in dim 2
+
+    Input shape:  (batch, s1, s2, d_v)
+    Output shape: (batch, s1, s2, d_v)
+    """
+
+    def __init__(self, d_v: int, k_max1: int, k_max2: int) -> None:
+        super().__init__()
+        self.k_max1 = k_max1
+        self.k_max2 = k_max2
+        # ── K branch: global Fourier integral operator ────────────────
+        self.spectral_conv = SpectralConv2D(d_v=d_v, k_max1=k_max1, k_max2=k_max2)
+        # W branch: Conv2d(dv, dv, kernel_size=1)
+        self.w = nn.Conv2d(
+            in_channels=d_v,
+            out_channels=d_v,
+            kernel_size=1,
+        )
+        self.activation = nn.ReLU()
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # K branch: spectral_conv(x)
+        # W branch: permute → Conv2d → permute back
+        # return: activation(k_out + w_out)
+        k_out = self.spectral_conv(x)
+        w_out = self.w(x.permute(0, 3, 1, 2)).permute(0, 2, 3, 1)
         return self.activation(k_out + w_out)

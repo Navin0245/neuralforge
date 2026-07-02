@@ -76,3 +76,8 @@ project_dump.txt
 data/
 data/
 *.mat
+
+# MLflow local files
+mlflow.db
+mlruns/
+mlartifacts/

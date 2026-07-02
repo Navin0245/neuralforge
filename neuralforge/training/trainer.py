@@ -75,9 +75,11 @@ class Trainer:
         avg_loss = total_loss / total_samples
         return avg_loss
 
-    def fit(self, epochs, run_name=None):
+    def fit(self, epochs, run_name=None, params=None):
         mlflow.end_run()
         with mlflow.start_run(run_name=run_name):
+            if params:
+                mlflow.log_params(params)
             for epoch in range(1, epochs + 1):
                 train_loss = self._train_one_epoch()
                 val_loss = self._validate_one_epoch()
