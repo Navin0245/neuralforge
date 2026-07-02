@@ -320,6 +320,13 @@ def main(config_path: str = "configs/burgers_fno.yaml") -> None:
         save_path="docs/benchmarks/figures/burgers_loss.png",
     )
 
+    import json
+
+    Path("metrics").mkdir(exist_ok=True)
+    Path("metrics/results.json").write_text(
+        json.dumps({"test_l2_error": final_l2, "test_l2_pct": round(final_l2 * 100, 4)})
+    )
+
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 
