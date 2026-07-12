@@ -150,3 +150,14 @@ class TestFNO1D:
         u = model(x)
         assert u.shape == torch.Size([2, 32, 1])
         assert not torch.isnan(u).any()
+
+    def test_no_activation_after_final_fourier_layer(self):
+        """
+        The reference implementation applies no activation after the
+        last Fourier layer — ReLU there would clip the hidden state
+        to non-negative values before Q.
+        """
+        model = FNO1D(da=1, du=1, d_v=16, k_max=4, n_layers=4)
+        assert isinstance(model.fourier_layers[-1].activation, torch.nn.Identity)
+        for layer in model.fourier_layers[:-1]:
+            assert isinstance(layer.activation, torch.nn.ReLU)

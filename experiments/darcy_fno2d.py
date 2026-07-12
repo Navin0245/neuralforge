@@ -31,10 +31,17 @@ def load_config(path: str) -> dict:
 # ── Data ──────────────────────────────────────────────────────────────────────
 
 
-def maybe_download(path: str, url: str) -> None:
+def maybe_download(path: str, url: str | None) -> None:
     p = Path(path)
     if p.exists():
         return
+    if not url:
+        raise FileNotFoundError(
+            f"Dataset missing and no download URL configured: {path}\n"
+            "Download it from the FNO datasets folder "
+            "(https://github.com/neuraloperator/neuraloperator) "
+            f"and place it at: {path}"
+        )
     p.parent.mkdir(parents=True, exist_ok=True)
     # Google Drive large files redirect to a virus-scan confirmation page;
     # appending confirm=t bypasses it so urlretrieve gets the actual file.
@@ -72,34 +79,29 @@ def load_darcy_data(path: str) -> tuple[np.ndarray, np.ndarray]:
     return a, u
 
 
-def prepare_loaders(a, u, cfg):
-    resolution = cfg["resolution"]
-    n_train = cfg["n_train"]
-    n_test = cfg["n_test"]
-    batch_size = cfg["batch_size"]
+def subsample_grid(field: np.ndarray, resolution: int) -> np.ndarray:
+    """
+    Subsample (N, n, n) fields to (N, resolution, resolution) covering
+    the FULL domain: the stride must land exactly on the last grid point,
+    i.e. (n-1) must be divisible by (resolution-1). Truncating a
+    non-dividing stride would silently crop the domain — the model would
+    then have to predict u from a permeability field it only partially
+    sees, which puts a hard floor on the achievable error.
+    """
+    n = field.shape[1]
+    if (n - 1) % (resolution - 1) != 0:
+        valid = [d + 1 for d in range(1, n) if (n - 1) % d == 0]
+        raise ValueError(
+            f"resolution={resolution} does not evenly subsample an n={n} grid: "
+            f"(n-1) % (resolution-1) != 0. Valid resolutions: {valid}"
+        )
+    step = (n - 1) // (resolution - 1)
+    return field[:, ::step, ::step]
 
-    # Subsample
-    subsample = a.shape[1] // resolution
-    a_sub = a[:, ::subsample, ::subsample][:, :resolution, :resolution]
-    u_sub = u[:, ::subsample, ::subsample][:, :resolution, :resolution]
 
-    # Normalise — CRITICAL for real Darcy data
-    a_min, a_max = a_sub.min(), a_sub.max()
-    u_max = u_sub.max()
-
-    a_norm = (a_sub - a_min) / (a_max - a_min)  # [0, 1]
-    u_norm = u_sub / u_max  # [0, 1]
-
-    print(
-        f"Normalisation: a=[{a_norm.min():.3f},{a_norm.max():.3f}]"
-        f" u=[{u_norm.min():.4f},{u_norm.max():.4f}]"
-    )
-
-    # To tensors
+def make_inputs(a_norm: np.ndarray, resolution: int) -> torch.Tensor:
+    """Stack [a(x,y), x, y] into (N, resolution, resolution, 3)."""
     a_tensor = torch.tensor(a_norm).unsqueeze(-1)
-    u_tensor = torch.tensor(u_norm).unsqueeze(-1)
-
-    # Grid
     total = a_tensor.shape[0]
     gx, gy = torch.meshgrid(
         torch.linspace(0, 1, resolution),
@@ -108,17 +110,44 @@ def prepare_loaders(a, u, cfg):
     )
     gx = gx.unsqueeze(0).unsqueeze(-1).expand(total, -1, -1, -1)
     gy = gy.unsqueeze(0).unsqueeze(-1).expand(total, -1, -1, -1)
+    return torch.cat([a_tensor, gx, gy], dim=-1)
 
-    inputs = torch.cat([a_tensor, gx, gy], dim=-1)
 
-    # Split
-    if n_train + n_test > total:
-        raise ValueError(f"n_train+n_test={n_train+n_test} > total={total}")
+def prepare_loaders(a_train, u_train, a_test, u_test, cfg):
+    resolution = cfg["resolution"]
+    n_train = cfg["n_train"]
+    n_test = cfg["n_test"]
+    batch_size = cfg["batch_size"]
 
-    x_train = inputs[:n_train]
-    y_train = u_tensor[:n_train]
-    x_test = inputs[n_train : n_train + n_test]
-    y_test = u_tensor[n_train : n_train + n_test]
+    if n_train > a_train.shape[0]:
+        raise ValueError(f"n_train={n_train} > train samples={a_train.shape[0]}")
+    if n_test > a_test.shape[0]:
+        raise ValueError(f"n_test={n_test} > test samples={a_test.shape[0]}")
+
+    # Subsample — full-domain, no cropping
+    a_tr = subsample_grid(a_train[:n_train], resolution)
+    u_tr = subsample_grid(u_train[:n_train], resolution)
+    a_te = subsample_grid(a_test[:n_test], resolution)
+    u_te = subsample_grid(u_test[:n_test], resolution)
+
+    # Normalise — stats from the TRAINING set only, applied to both splits
+    a_min, a_max = a_tr.min(), a_tr.max()
+    u_max = u_tr.max()
+
+    a_tr_norm = (a_tr - a_min) / (a_max - a_min)
+    a_te_norm = (a_te - a_min) / (a_max - a_min)
+    u_tr_norm = u_tr / u_max
+    u_te_norm = u_te / u_max
+
+    print(
+        f"Normalisation (train stats): a=[{a_tr_norm.min():.3f},{a_tr_norm.max():.3f}]"
+        f" u=[{u_tr_norm.min():.4f},{u_tr_norm.max():.4f}]"
+    )
+
+    x_train = make_inputs(a_tr_norm, resolution)
+    y_train = torch.tensor(u_tr_norm).unsqueeze(-1)
+    x_test = make_inputs(a_te_norm, resolution)
+    y_test = torch.tensor(u_te_norm).unsqueeze(-1)
 
     print(f"x_train: {tuple(x_train.shape)}")
     print(f"y_train: {tuple(y_train.shape)}")
@@ -179,11 +208,14 @@ def main(config_path: str = "configs/darcy_fno.yaml") -> None:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
 
-    # Data
-    maybe_download(data_cfg["path"], data_cfg["url"])
-    # Real data
-    a, u = load_darcy_data(data_cfg["path"])
-    train_loader, test_loader, x_test, y_test = prepare_loaders(a, u, data_cfg)
+    # Data — paper protocol: train on smooth1, test on smooth2
+    maybe_download(data_cfg["train_path"], data_cfg.get("train_url"))
+    maybe_download(data_cfg["test_path"], data_cfg.get("test_url"))
+    a_train, u_train = load_darcy_data(data_cfg["train_path"])
+    a_test, u_test = load_darcy_data(data_cfg["test_path"])
+    train_loader, test_loader, x_test, y_test = prepare_loaders(
+        a_train, u_train, a_test, u_test, data_cfg
+    )
 
     # Model
     model = FNO2D(
@@ -198,7 +230,11 @@ def main(config_path: str = "configs/darcy_fno.yaml") -> None:
     n_params = sum(p.numel() for p in model.parameters())
     print(f"Model parameters: {n_params:,}")
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=train_cfg["lr"])
+    optimizer = torch.optim.Adam(
+        model.parameters(),
+        lr=train_cfg["lr"],
+        weight_decay=train_cfg["weight_decay"],
+    )
     scheduler = torch.optim.lr_scheduler.StepLR(
         optimizer,
         step_size=train_cfg["scheduler_step"],
@@ -217,10 +253,12 @@ def main(config_path: str = "configs/darcy_fno.yaml") -> None:
         "k_max2": model_cfg["k_max2"],
         "n_layers": model_cfg["n_layers"],
         "n_train": data_cfg["n_train"],
+        "n_test": data_cfg["n_test"],
         "resolution": data_cfg["resolution"],
         "batch_size": data_cfg["batch_size"],
         "epochs": train_cfg["epochs"],
         "lr": train_cfg["lr"],
+        "weight_decay": train_cfg["weight_decay"],
         "scheduler_step": train_cfg["scheduler_step"],
         "device": str(device),
         "config_path": config_path,

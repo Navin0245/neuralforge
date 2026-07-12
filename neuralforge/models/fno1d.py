@@ -110,8 +110,14 @@ class FNO1D(NeuralOperator):
         # ── T Fourier layers ──────────────────────────────────────────
         # Each layer: v_{t+1} = σ(W·v_t + K·v_t)
         # ModuleList so PyTorch registers all parameters
+        # No activation after the final layer (reference implementation):
+        # Q provides its own nonlinearity, and clipping the last hidden
+        # state with ReLU would discard half the representation space.
         self.fourier_layers = nn.ModuleList(
-            [FourierLayer1D(d_v=d_v, k_max=k_max) for _ in range(n_layers)]
+            [
+                FourierLayer1D(d_v=d_v, k_max=k_max, activation=(i < n_layers - 1))
+                for i in range(n_layers)
+            ]
         )
 
         # ── Q: projection network ─────────────────────────────────────

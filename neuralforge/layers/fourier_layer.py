@@ -50,10 +50,14 @@ class FourierLayer1D(nn.Module):
     Four of these are stacked to form the complete FNO architecture.
 
     Args:
-        d_v:   Hidden channel dimension.
-               Paper: 64 (1D problems), 32 (2D problems).
-        k_max: Maximum Fourier modes for the K branch.
-               Paper: 16 (Burgers), 12 (Darcy).
+        d_v:        Hidden channel dimension.
+                    Paper: 64 (1D problems), 32 (2D problems).
+        k_max:      Maximum Fourier modes for the K branch.
+                    Paper: 16 (Burgers), 12 (Darcy).
+        activation: Apply σ after combining branches. The reference
+                    implementation applies no activation after the
+                    final Fourier layer, so FNO builds its last layer
+                    with activation=False. Default True.
 
     Input shape:  (batch, n, d_v)   real
     Output shape: (batch, n, d_v)   real
@@ -76,7 +80,7 @@ class FourierLayer1D(nn.Module):
         ...     x = layer(x)
     """
 
-    def __init__(self, d_v: int, k_max: int) -> None:
+    def __init__(self, d_v: int, k_max: int, activation: bool = True) -> None:
         super().__init__()
 
         self.d_v = d_v
@@ -108,7 +112,8 @@ class FourierLayer1D(nn.Module):
         # ReLU applied after combining both branches.
         # Applied ONCE to the sum, not to each branch separately.
         # σ(a + b) ≠ σ(a) + σ(b) — applying separately would be wrong.
-        self.activation = nn.ReLU()
+        # Identity when activation=False (final layer of the FNO stack).
+        self.activation = nn.ReLU() if activation else nn.Identity()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -165,15 +170,21 @@ class FourierLayer2D(nn.Module):
         - permute(0,3,1,2) instead of transpose(1,2)
 
     Args:
-        d_v:    Hidden channel dimension
-        k_max1: Max Fourier modes in dim 1
-        k_max2: Max Fourier modes in dim 2
+        d_v:        Hidden channel dimension
+        k_max1:     Max Fourier modes in dim 1
+        k_max2:     Max Fourier modes in dim 2
+        activation: Apply σ after combining branches. The reference
+                    implementation applies no activation after the
+                    final Fourier layer, so FNO builds its last layer
+                    with activation=False. Default True.
 
     Input shape:  (batch, s1, s2, d_v)
     Output shape: (batch, s1, s2, d_v)
     """
 
-    def __init__(self, d_v: int, k_max1: int, k_max2: int) -> None:
+    def __init__(
+        self, d_v: int, k_max1: int, k_max2: int, activation: bool = True
+    ) -> None:
         super().__init__()
         self.k_max1 = k_max1
         self.k_max2 = k_max2
@@ -185,7 +196,8 @@ class FourierLayer2D(nn.Module):
             out_channels=d_v,
             kernel_size=1,
         )
-        self.activation = nn.ReLU()
+        # Identity when activation=False (final layer of the FNO stack)
+        self.activation = nn.ReLU() if activation else nn.Identity()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # K branch: spectral_conv(x)
