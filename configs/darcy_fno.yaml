@@ -7,16 +7,23 @@ model:
   n_layers: 4
 
 data:
-  n_train: 824
+  n_train: 1000
   n_test: 200
-  resolution: 64
+  # 241-grid: (241-1) % (resolution-1) must be 0 so subsampling covers
+  # the full domain without cropping. Valid: 61 (::4), 81 (::3), 121 (::2).
+  resolution: 61
   batch_size: 20
-  path: "data/piececonst_r241_N1024_smooth2.mat"
-  url: "https://drive.google.com/uc?id=1ViDqN7nc_VCnMackiXv_d7CHZANAFKzV"
+  # Paper protocol (Li et al. 2021, Section 5.2): train on smooth1,
+  # test on smooth2 — separate files, no leakage.
+  train_path: "data/piececonst_r241_N1024_smooth1.mat"
+  train_url: null
+  test_path: "data/piececonst_r241_N1024_smooth2.mat"
+  test_url: "https://drive.google.com/uc?id=1ViDqN7nc_VCnMackiXv_d7CHZANAFKzV"
 
 training:
   epochs: 500
   lr: 0.001
+  weight_decay: 0.0001
   scheduler_step: 100
   scheduler_gamma: 0.5
 

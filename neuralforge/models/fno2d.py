@@ -72,10 +72,18 @@ class FNO2D(NeuralOperator):
         self.padding = padding
 
         self.p = nn.Linear(da, d_v)
+        # No activation after the final layer (reference implementation):
+        # Q provides its own nonlinearity, and clipping the last hidden
+        # state with ReLU would discard half the representation space.
         self.fourier_layers = nn.ModuleList(
             [
-                FourierLayer2D(d_v=d_v, k_max1=k_max1, k_max2=k_max2)
-                for _ in range(n_layers)
+                FourierLayer2D(
+                    d_v=d_v,
+                    k_max1=k_max1,
+                    k_max2=k_max2,
+                    activation=(i < n_layers - 1),
+                )
+                for i in range(n_layers)
             ]
         )
         self.q = nn.Sequential(

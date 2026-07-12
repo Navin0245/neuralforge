@@ -107,3 +107,14 @@ class TestFNO2D:
             f"rfft2 output wrong: expected (2,32,33,8), got {x_ft.shape}. "
             f"dim1 must stay full (32), only dim2 halved (64//2+1=33)."
         )
+
+    def test_no_activation_after_final_fourier_layer(self):
+        """
+        The reference implementation applies no activation after the
+        last Fourier layer — ReLU there would clip the hidden state
+        to non-negative values before Q.
+        """
+        model = FNO2D(da=1, du=1, d_v=16, k_max1=4, k_max2=4, n_layers=4)
+        assert isinstance(model.fourier_layers[-1].activation, torch.nn.Identity)
+        for layer in model.fourier_layers[:-1]:
+            assert isinstance(layer.activation, torch.nn.ReLU)
